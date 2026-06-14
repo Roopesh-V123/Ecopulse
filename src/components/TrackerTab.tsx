@@ -1,132 +1,21 @@
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { useEcoStore } from '../store/useEcoStore';
+import { useCarbonForm } from '../hooks/useCarbonForm';
 import { Car, Salad, Zap, Trash2, Send, CheckCircle2 } from 'lucide-react';
-import type { CategoryType } from '../types';
-
-// XSS input sanitization utility helper
-function sanitizeInput<T extends Record<string, any>>(data: T): T {
-  const sanitized = { ...data };
-  for (const key in sanitized) {
-    if (typeof sanitized[key] === 'string') {
-      sanitized[key] = sanitized[key]
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#x27;") as any;
-    }
-  }
-  return sanitized;
-}
-
-// -----------------------------------------
-// ZOD VALIDATION SCHEMAS
-// -----------------------------------------
-const transportSchema = z.object({
-  vehicleType: z.enum(['car_petrol', 'car_diesel', 'car_electric', 'bus', 'train', 'bike_walking']),
-  distance: z.number().min(0, "Distance cannot be negative").max(1000, "Distance maximum is 1000 km per single log"),
-  date: z.string().nonempty("Date is required")
-});
-
-const foodSchema = z.object({
-  dietType: z.enum(['meat_heavy', 'mixed', 'vegetarian', 'vegan']),
-  servings: z.number().min(1, "Must log at least 1 serving").max(10, "Servings maximum is 10"),
-  date: z.string().nonempty("Date is required")
-});
-
-const energySchema = z.object({
-  electricityKwh: z.number().min(0, "Electricity usage cannot be negative").max(200, "Maximum is 200 kWh per single log"),
-  acHours: z.number().min(0, "AC hours cannot be negative").max(24, "AC hours cannot exceed 24 hours in a day"),
-  appliancesCount: z.number().min(0, "Appliances count cannot be negative").max(50, "Maximum limit of 50 appliance devices"),
-  date: z.string().nonempty("Date is required")
-});
-
-const wasteSchema = z.object({
-  clothingItems: z.number().min(0, "Clothing items cannot be negative").max(20, "Maximum limit of 20 clothing items per single log"),
-  electronicsCount: z.number().min(0, "Electronics count cannot be negative").max(10, "Maximum limit of 10 electronic items per single log"),
-  recycledWeight: z.number().min(0, "Recycled weight cannot be negative").max(100, "Maximum limit of 100 kg"),
-  nonRecycledWeight: z.number().min(0, "Non-recycled weight cannot be negative").max(100, "Maximum limit of 100 kg"),
-  date: z.string().nonempty("Date is required")
-});
-
-type TransportFormValues = z.infer<typeof transportSchema>;
-type FoodFormValues = z.infer<typeof foodSchema>;
-type EnergyFormValues = z.infer<typeof energySchema>;
-type WasteFormValues = z.infer<typeof wasteSchema>;
 
 export default function TrackerTab() {
-  const { addLog } = useEcoStore();
-  const [activeSubTab, setActiveSubTab] = useState<CategoryType>('transportation');
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
-
-  const todayStr = new Date().toISOString().split('T')[0];
-
-  // Forms setup
-  const transportForm = useForm<TransportFormValues>({
-    resolver: zodResolver(transportSchema),
-    defaultValues: { vehicleType: 'car_petrol', distance: 10, date: todayStr }
-  });
-
-  const foodForm = useForm<FoodFormValues>({
-    resolver: zodResolver(foodSchema),
-    defaultValues: { dietType: 'mixed', servings: 1, date: todayStr }
-  });
-
-  const energyForm = useForm<EnergyFormValues>({
-    resolver: zodResolver(energySchema),
-    defaultValues: { electricityKwh: 5, acHours: 0, appliancesCount: 5, date: todayStr }
-  });
-
-  const wasteForm = useForm<WasteFormValues>({
-    resolver: zodResolver(wasteSchema),
-    defaultValues: { clothingItems: 0, electronicsCount: 0, recycledWeight: 1, nonRecycledWeight: 1, date: todayStr }
-  });
-
-  // Submit handoffs
-  const onTransportSubmit = (data: TransportFormValues) => {
-    const cleanData = sanitizeInput(data);
-    addLog('transportation', { vehicleType: cleanData.vehicleType, distance: cleanData.distance }, cleanData.date);
-    triggerSuccess("Transportation activity logged successfully! +20 XP earned.");
-    transportForm.reset({ vehicleType: 'car_petrol', distance: 10, date: todayStr });
-  };
-
-  const onFoodSubmit = (data: FoodFormValues) => {
-    const cleanData = sanitizeInput(data);
-    addLog('food', { dietType: cleanData.dietType, servings: cleanData.servings }, cleanData.date);
-    triggerSuccess("Food consumption logged successfully! +20 XP earned.");
-    foodForm.reset({ dietType: 'mixed', servings: 1, date: todayStr });
-  };
-
-  const onEnergySubmit = (data: EnergyFormValues) => {
-    const cleanData = sanitizeInput(data);
-    addLog('energy', { 
-      electricityKwh: cleanData.electricityKwh, 
-      acHours: cleanData.acHours, 
-      appliancesCount: cleanData.appliancesCount 
-    }, cleanData.date);
-    triggerSuccess("Energy usage logged successfully! +20 XP earned.");
-    energyForm.reset({ electricityKwh: 5, acHours: 0, appliancesCount: 5, date: todayStr });
-  };
-
-  const onWasteSubmit = (data: WasteFormValues) => {
-    const cleanData = sanitizeInput(data);
-    addLog('shopping_waste', {
-      clothingItems: cleanData.clothingItems,
-      electronicsCount: cleanData.electronicsCount,
-      recycledWeight: cleanData.recycledWeight,
-      nonRecycledWeight: cleanData.nonRecycledWeight
-    }, cleanData.date);
-    triggerSuccess("Shopping & waste logged successfully! +20 XP earned.");
-    wasteForm.reset({ clothingItems: 0, electronicsCount: 0, recycledWeight: 1, nonRecycledWeight: 1, date: todayStr });
-  };
-
-  const triggerSuccess = (msg: string) => {
-    setSuccessMsg(msg);
-    setTimeout(() => setSuccessMsg(null), 4000);
-  };
+  const {
+    activeSubTab,
+    setActiveSubTab,
+    successMsg,
+    setSuccessMsg,
+    transportForm,
+    foodForm,
+    energyForm,
+    wasteForm,
+    onTransportSubmit,
+    onFoodSubmit,
+    onEnergySubmit,
+    onWasteSubmit
+  } = useCarbonForm();
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in" role="tabpanel" aria-label="Tracker Panel">
@@ -192,7 +81,7 @@ export default function TrackerTab() {
 
       {/* Success Alert */}
       {successMsg && (
-        <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 text-brand-mint text-sm rounded-2xl px-5 py-3 text-left">
+        <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 text-brand-mint text-sm rounded-2xl px-5 py-3 text-left animate-fade-in">
           <CheckCircle2 className="h-5 w-5 shrink-0" />
           <span>{successMsg}</span>
         </div>

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { ActivityLog, UserProfile, CommunityChallenge, Badge, LeaderboardEntry, CategoryType } from '../types';
 import { calculateLogEmissions } from '../utils/math';
+import { stateRehydrationSchema } from '../utils/schemas';
 
 interface EcoStore {
   users: UserProfile[];
@@ -481,6 +482,16 @@ export const useEcoStore = create<EcoStore>()(
     }),
     {
       name: 'ecopulse_eco_store',
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          try {
+            stateRehydrationSchema.parse(state);
+          } catch (e) {
+            console.warn('EcoPulse LocalStorage hydration schema check failed. Fallback resetting data.', e);
+            state.resetData();
+          }
+        }
+      }
     }
   )
 );

@@ -15,17 +15,7 @@ function sanitizeString(str: string): string {
     .replace(/'/g, "&#x27;");
 }
 
-const loginSchema = z.object({
-  email: z.string().nonempty("Email is required").email("Invalid email format"),
-  password: z.string().nonempty("Password is required")
-});
-
-const registerSchema = z.object({
-  name: z.string().nonempty("Name is required").min(2, "Name must be at least 2 characters"),
-  email: z.string().nonempty("Email is required").email("Invalid email format"),
-  password: z.string().nonempty("Password is required").min(6, "Password must be at least 6 characters"),
-  targetDaily: z.number().min(2, "Minimum carbon limit is 2 kg").max(100, "Maximum carbon limit is 100 kg")
-});
+import { loginSchema, registerSchema } from '../utils/schemas';
 
 type LoginValues = z.infer<typeof loginSchema>;
 type RegisterValues = z.infer<typeof registerSchema>;
